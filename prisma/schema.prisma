@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum StandardTag {
+  NFPA
+  IEC
+  BS
+}
+
+enum ProjectSystemType {
+  RESIDENTIAL
+  COMMERCIAL
+  INDUSTRIAL
+  INFRASTRUCTURE
+}
+
+enum ModuleType {
+  ESTIMATION_LOAD
+  PROTECTIVE_DEVICE_SETTING
+  SHORT_CIRCUIT
+  VOLTAGE_DROP
+  POWER_FACTOR_CORRECTION
+  POWER_QUALITY
+  CONDUCTOR_SIZING
+  RACEWAY_SIZING
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String   @unique
+  password  String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookmarks Bookmark[]
+  projects  Project[]
+}
+
+model NewsSource {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  region    String?
+  standard  StandardTag
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NewsItem {
+  id            String   @id @default(cuid())
+  title         String
+  summary       String
+  link          String
+  source        String
+  publishedAt   DateTime
+  category      String
+  standard      StandardTag
+  thumbnailUrl  String?
+  savedCount    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  bookmarks Bookmark[]
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  news      NewsItem @relation(fields: [newsId], references: [id])
+  newsId    String
+  createdAt DateTime @default(now())
+}
+
+model Project {
+  id          String            @id @default(cuid())
+  name        String
+  location    String?
+  client      String?
+  voltage     String?
+  systemType  ProjectSystemType
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  owner       User              @relation(fields: [ownerId], references: [id])
+  ownerId     String
+  moduleRuns  ModuleRun[]
+  tags        ProjectTag[]
+}
+
+model ProjectTag {
+  id        String   @id @default(cuid())
+  label     String
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId String
+}
+
+model ModuleRun {
+  id                String     @id @default(cuid())
+  project           Project    @relation(fields: [projectId], references: [id])
+  projectId         String
+  module            ModuleType
+  inputJson         Json
+  outputJson        Json
+  calculatedAt      DateTime
+  standardReference String
+  version           String
+  isCurrent         Boolean    @default(false)
+  createdAt         DateTime   @default(now())
+}
+
+model KnowledgeTopic {
+  id          String   @id @default(cuid())
+  title       String
+  category    String
+  summary     String
+  outline     Json
+  keyTerms    Json
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}
